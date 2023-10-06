@@ -1,4 +1,4 @@
-package main
+package shred
 
 import (
 	"crypto/rand"
