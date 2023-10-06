@@ -100,18 +100,18 @@ root_filesystem=debootstrap.ext4.qcow2
 # debootstrap for debootstrap
 # qemu-system-x86 for qemu
 # linux-image-generic for supermin bug
-sudo apt-get update && apt-get install -y --no-install-recommends \
+sudo apt-get update && sudo apt-get install -y --no-install-recommends \
   debootstrap \
   qemu-system-x86 \
   linux-image-generic \
-  && rm -rf /var/lib/apt/lists/*
+  && sudo rm -rf /var/lib/apt/lists/*
 
 # Check if we already made debootstrap dir
 if [ ! -d "$debootstrap_dir" ]; then
   # Create debootstrap directory.
   # - linux-image-generic: downloads the kernel image under /boot
   # If user wants focal ubuntu then use that, else jammy
-  if [ ${focal_flag} = 0]; then
+  if [ ${focal_flag} = 1]; then
     sudo debootstrap \
         --include linux-image-generic \
         focal \
@@ -125,11 +125,12 @@ if [ ! -d "$debootstrap_dir" ]; then
         "$debootstrap_dir" \
         http://archive.ubuntu.com/ubuntu \
     ;
+  fi
 fi
 
 linux_image="$(printf "${debootstrap_dir}/boot/vmlinuz-"*)"
 
-if [! -f "$root_filesystem" ]; then
+if [ ! -f "$root_filesystem" ]; then
   # Create init script to print hello world and spin to stop user prompt
   sudo touch "${debootstrap_dir}/init"
   cat <<'EOF' | sudo tee "${debootstrap_dir}/init"
