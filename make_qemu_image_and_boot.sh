@@ -13,7 +13,8 @@
 #    -h, --help           Print this help
 #    -v, --verbose        Print script information
 #    --version            Print script version
-#    --
+#    --focal              Use Ubuntu focal for debootstrap, otherwise jammy
+#    --kvm                Run QEMU with kvm enabled, else emulation
 #
 # EXAMPLES
 #    ./make_qemu_image_and_boot.sh -h
@@ -36,7 +37,7 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 # Show how the script should be used
 usage() {
     cat <<USAGE_TEXT
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [--version]
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [--version] [--focal] [--kvm]
 
 DESCRIPTION
     This script is used to to build and run an AMD64 Linux filesystem using QEMU. It prints "hello world" after
@@ -47,6 +48,10 @@ DESCRIPTION
         Print this help and exit.
     -v, --version
         Print script debug info.
+    --focal
+        Use Ubuntu focal for debootstrap, otherwise jammy
+    --kvm
+        Run QEMU with kvm enabled, else emulation
     
 USAGE_TEXT
     exit
@@ -69,6 +74,7 @@ die() {
 parse_user_options() {
     # default values of variables set from params
     focal_flag=0
+    kvm_flag=0
 
     while :; do
         case "${1-}" in
@@ -76,6 +82,7 @@ parse_user_options() {
         -v | --verbose) set -x ;;
         --version) echo "make_qemu_image_and_boot script version=${version}"; exit;;
         --focal) focal_flag=1 ;;
+        --kvm) kvm_flag=1 ;;
         # Kill the script if an unknown option is given
         -?*) die "Unknown option: $1" ;;
         *) break ;;
@@ -154,12 +161,22 @@ EOF
   sudo chmod 666 "$root_filesystem"
 fi
 
-qemu-system-x86_64 \
-  -append 'console=ttyS0 root=/dev/sda init=/init' \
-  -drive "file=${root_filesystem},format=qcow2" \
-  -serial mon:stdio \
-  -m 2G \
-  -kernel "${linux_image}" \
-;
-
+if [ ${kvm_flag} = 1]; then
+    qemu-system-x86_64 \
+    -append 'console=ttyS0 root=/dev/sda init=/init' \
+    -drive "file=${root_filesystem},format=qcow2" \
+    -enable-kvm
+    -serial mon:stdio \
+    -m 2G \
+    -kernel "${linux_image}" \
+    ;
+else
+    qemu-system-x86_64 \
+    -append 'console=ttyS0 root=/dev/sda init=/init' \
+    -drive "file=${root_filesystem},format=qcow2" \
+    -serial mon:stdio \
+    -m 2G \
+    -kernel "${linux_image}" \
+    ;
+fi
 # End Main script
