@@ -15,6 +15,7 @@
 #    --version            Print script version
 #    --focal              Use Ubuntu focal for debootstrap, otherwise jammy
 #    --kvm                Run QEMU with kvm enabled, else emulation
+#    --clean              Remove the debootstrap dir and filesystem before building
 #
 # EXAMPLES
 #    ./make_qemu_image_and_boot.sh -h
@@ -52,6 +53,8 @@ DESCRIPTION
         Use Ubuntu focal for debootstrap, otherwise jammy
     --kvm
         Run QEMU with kvm enabled, else emulation
+    --clean
+        Remove the debootstrap dir and filesystem before building
     
 USAGE_TEXT
     exit
@@ -75,6 +78,7 @@ parse_user_options() {
     # default values of variables set from params
     focal_flag=0
     kvm_flag=0
+    clean_flag=0
 
     while :; do
         case "${1-}" in
@@ -83,6 +87,7 @@ parse_user_options() {
         --version) echo "make_qemu_image_and_boot script version=${version}"; exit;;
         --focal) focal_flag=1 ;;
         --kvm) kvm_flag=1 ;;
+        --clean) clean_flag=1 ;;
         # Kill the script if an unknown option is given
         -?*) die "Unknown option: $1" ;;
         *) break ;;
@@ -113,12 +118,17 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
   linux-image-generic \
   && sudo rm -rf /var/lib/apt/lists/*
 
+if [ ${clean_flag} = 1 ]; then
+    sudo rm -rf "$debootstrap_dir"
+    sudo rm -rf "$root_filesystem"
+fi
+
 # Check if we already made debootstrap dir
 if [ ! -d "$debootstrap_dir" ]; then
   # Create debootstrap directory.
   # - linux-image-generic: downloads the kernel image under /boot
   # If user wants focal ubuntu then use that, else jammy
-  if [ ${focal_flag} = 1]; then
+  if [ ${focal_flag} = 1 ]; then
     sudo debootstrap \
         --include linux-image-generic \
         focal \
@@ -161,11 +171,12 @@ EOF
   sudo chmod 666 "$root_filesystem"
 fi
 
-if [ ${kvm_flag} = 1]; then
+# Run qemu with/without kvm and call init script from debootstrap image
+if [ ${kvm_flag} = 1 ]; then
     qemu-system-x86_64 \
     -append 'console=ttyS0 root=/dev/sda init=/init' \
     -drive "file=${root_filesystem},format=qcow2" \
-    -enable-kvm
+    -enable-kvm \
     -serial mon:stdio \
     -m 2G \
     -kernel "${linux_image}" \
