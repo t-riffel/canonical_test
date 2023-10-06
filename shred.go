@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 )
@@ -38,5 +39,30 @@ func Shred(filePath string) error {
 	}
 	defer file.Close() // Ensure file is closed after operation
 
+	// randomData will hold data equal to the file size
+	randomData := make([]byte, fileSize)
+
+	// overwrite the file 3 times with randomness
+	for i := 0; i < 3; i++ {
+		_, err := rand.Read(randomData)
+		if err != nil {
+			return fmt.Errorf("error generating random data: %v", err)
+		}
+
+		file.WriteAt(randomData, 0)
+		if err != nil {
+			return fmt.Errorf("error writing to file: %v", err)
+		}
+		// sync to disk
+		file.Sync()
+	}
+
+	// now delete the file
+	err = os.Remove(filePath)
+	if err != nil {
+		return fmt.Errorf("error deleting file: %v", err)
+	}
+
+	fmt.Printf("File %s successfully shredded.\n", filePath)
 	return nil
 }
