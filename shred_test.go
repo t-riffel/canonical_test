@@ -1,7 +1,6 @@
 package shred
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -16,7 +15,7 @@ func TestShred(t *testing.T) {
 		{
 			name: "shred existing file",
 			setupFunc: func() (string, error) {
-				file, err := ioutil.TempFile("", "shredder_test")
+				file, err := os.CreateTemp("", "shredder_test")
 				if err != nil {
 					return "", err
 				}
@@ -35,7 +34,7 @@ func TestShred(t *testing.T) {
 		{
 			name: "shred read-only file",
 			setupFunc: func() (string, error) {
-				file, err := ioutil.TempFile("", "shredder_test")
+				file, err := os.CreateTemp("", "shredder_test")
 				if err != nil {
 					return "", err
 				}
@@ -44,6 +43,17 @@ func TestShred(t *testing.T) {
 				return file.Name(), nil
 			},
 			expectErr: true,
+		},
+		{
+			name: "shred a directory",
+			setupFunc: func() (string, error) {
+				dir, err := os.MkdirTemp("", "shredder_test")
+				if err != nil {
+					return "", err
+				}
+				return dir, nil
+			},
+			expectErr: true, // Expecting an error because a directory is not a regular file
 		},
 	}
 
