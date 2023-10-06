@@ -68,13 +68,14 @@ die() {
 # Parse the options provided with the script call
 parse_user_options() {
     # default values of variables set from params
-    # ci_flag=0
+    focal_flag=0
 
     while :; do
         case "${1-}" in
         -h | --help) usage ;;
         -v | --verbose) set -x ;;
         --version) echo "make_qemu_image_and_boot script version=${version}"; exit;;
+        --focal) focal_flag=1 ;;
         # Kill the script if an unknown option is given
         -?*) die "Unknown option: $1" ;;
         *) break ;;
@@ -92,5 +93,40 @@ parse_user_options "$@"
 # Move to the script location
 cd ${script_dir}
 
+debootstrap_dir=debootstrap
+root_filesystem=debootstrap.ext4.qcow2
+
+# Install needed packages and cleanup
+# debootstrap for debootstrap
+# qemu-system-x86 for qemu
+# linux-image-generic for supermin bug
+sudo apt-get update && apt-get install -y --no-install-recommends \
+  debootstrap \
+  qemu-system-x86 \
+  linux-image-generic \
+  && rm -rf /var/lib/apt/lists/*
+
+# Check if we already made debootstrap dir
+if [ ! -d "$debootstrap_dir" ]; then
+  # Create debootstrap directory.
+  # - linux-image-generic: downloads the kernel image under /boot
+  # If user wants focal ubuntu then use that, else jammy
+  if [ ${focal_flag} = 0]; then
+    sudo debootstrap \
+        --include linux-image-generic \
+        focal \
+        "$debootstrap_dir" \
+        http://archive.ubuntu.com/ubuntu \
+    ;
+  else
+    sudo debootstrap \
+        --include linux-image-generic \
+        jammy \
+        "$debootstrap_dir" \
+        http://archive.ubuntu.com/ubuntu \
+    ;
+fi
+
+linux_image="$(printf "${debootstrap_dir}/boot/vmlinuz-"*)"
 
 # End Main script
