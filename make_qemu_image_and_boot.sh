@@ -129,4 +129,13 @@ fi
 
 linux_image="$(printf "${debootstrap_dir}/boot/vmlinuz-"*)"
 
+# Create init script to print hello world and spin to stop user prompt
+  sudo touch "${debootstrap_dir}/init"
+  cat <<'EOF' | sudo tee "${debootstrap_dir}/init"
+#!/bin/bash
+echo "hello world"
+while :; do :; done
+EOF
+  sudo chmod +x "${debootstrap_dir}/init"
+
 # End Main script
