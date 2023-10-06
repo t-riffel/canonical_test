@@ -129,7 +129,8 @@ fi
 
 linux_image="$(printf "${debootstrap_dir}/boot/vmlinuz-"*)"
 
-# Create init script to print hello world and spin to stop user prompt
+if [! -f "$root_filesystem" ]; then
+  # Create init script to print hello world and spin to stop user prompt
   sudo touch "${debootstrap_dir}/init"
   cat <<'EOF' | sudo tee "${debootstrap_dir}/init"
 #!/bin/bash
@@ -137,5 +138,20 @@ echo "hello world"
 while :; do :; done
 EOF
   sudo chmod +x "${debootstrap_dir}/init"
+
+  # Avoid supermin bug
+  sudo dpkg-statoverride --force-statoverride-add --update --add root root 0644 "$linux_image"
+
+  # Generate image file from debootstrap directory with 1G size
+  sudo virt-make-fs \
+    --format qcow2 \
+    --size +1G \
+    --type ext4 \
+    "$debootstrap_dir" \
+    "$root_filesystem" \
+  ;
+  sudo chmod 666 "$root_filesystem"
+fi
+
 
 # End Main script
