@@ -2,6 +2,7 @@ package shred
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -15,7 +16,6 @@ func TestShred(t *testing.T) {
 		{
 			name: "shred existing file",
 			setupFunc: func() (string, error) {
-				// Create a temp file
 				file, err := ioutil.TempFile("", "shredder_test")
 				if err != nil {
 					return "", err
@@ -24,6 +24,26 @@ func TestShred(t *testing.T) {
 				return file.Name(), nil
 			},
 			expectErr: false,
+		},
+		{
+			name: "shred non-existing file",
+			setupFunc: func() (string, error) {
+				return "nonexistentfile", nil
+			},
+			expectErr: true,
+		},
+		{
+			name: "shred read-only file",
+			setupFunc: func() (string, error) {
+				file, err := ioutil.TempFile("", "shredder_test")
+				if err != nil {
+					return "", err
+				}
+				file.Close()
+				os.Chmod(file.Name(), 0444)
+				return file.Name(), nil
+			},
+			expectErr: true,
 		},
 	}
 
