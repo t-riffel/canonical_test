@@ -53,7 +53,32 @@ func TestShred(t *testing.T) {
 				}
 				return dir, nil
 			},
-			expectErr: true, // Expecting an error because a directory is not a regular file
+			expectErr: true,
+		},
+		{
+			name: "shred a symlink",
+			setupFunc: func() (string, error) {
+				file, err := os.CreateTemp("", "shredder_test")
+				if err != nil {
+					return "", err
+				}
+				file.Close()
+				symlink := file.Name() + "_symlink"
+				// Create a symlink to the temporary file
+				err = os.Symlink(file.Name(), symlink)
+				if err != nil {
+					return "", err
+				}
+				return symlink, nil
+			},
+			expectErr: false,
+		},
+		{
+			name: "shred a device file",
+			setupFunc: func() (string, error) {
+				return "/dev/null", nil // use /dev/null as an example device file
+			},
+			expectErr: true,
 		},
 	}
 
