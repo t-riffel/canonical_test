@@ -80,6 +80,18 @@ func TestShred(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "shred an empty file",
+			setupFunc: func() (string, error) {
+				file, err := os.CreateTemp("", "shredder_test")
+				if err != nil {
+					return "", err
+				}
+				file.Close()
+				return file.Name(), nil
+			},
+			expectErr: false,
+		},
 	}
 
 	for _, tt := range tests {
