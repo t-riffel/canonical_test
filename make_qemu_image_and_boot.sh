@@ -153,5 +153,12 @@ EOF
   sudo chmod 666 "$root_filesystem"
 fi
 
+qemu-system-x86_64 \
+  -append 'console=ttyS0 root=/dev/sda init=/init' \
+  -drive "file=${root_filesystem},format=qcow2" \
+  -serial mon:stdio \
+  -m 2G \
+  -kernel "${linux_image}" \
+;
 
 # End Main script
